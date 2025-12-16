@@ -72,30 +72,45 @@ if ($newRole === "ADMIN") {
    2) APPROVE / REJECT продюсера
 ########################################################*/
 
-if ($status) {
-    if ($status !== "APPROVED" && $status !== "REJECTED") {
+if ($status !== null) {
+    $status = strtoupper(trim((string)$status));
+
+    if (!in_array($status, ["APPROVED", "REJECTED"], true)) {
+        http_response_code(400);
         echo json_encode(["error" => "Invalid status"]);
         exit;
     }
 
-    // Выбираем роль для пользователя
+    // Если одобрили — делаем PRODUCER + APPROVED
+    // Если отклонили — возвращаем CUSTOMER + NONE (нет заявки)
     $roleAfter = $status === "APPROVED" ? "PRODUCER" : "CUSTOMER";
+    $approvalAfter = $status === "APPROVED" ? "APPROVED" : "NONE";
 
-    // Обновить запись
     $stmt = $pdo->prepare("
         UPDATE marketplace_users
         SET approval_status = ?, role = ?
         WHERE user_id = ? AND marketplace_id = ?
     ");
-    $stmt->execute([$status, $roleAfter, $targetUserId, $marketplaceId]);
+    $stmt->execute([$approvalAfter, $roleAfter, $targetUserId, $marketplaceId]);
+
+    if ($stmt->rowCount() === 0) {
+        http_response_code(404);
+        echo json_encode([
+            "error" => "Marketplace user not found (no row updated)",
+            "userId" => $targetUserId,
+            "marketplaceId" => $marketplaceId
+        ]);
+        exit;
+    }
 
     echo json_encode([
         "success" => true,
-        "status" => $status,
+        "status" => $approvalAfter,
         "role" => $roleAfter
     ]);
     exit;
 }
+
 
 
 /* -------------------------------------------------------
