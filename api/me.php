@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/config.php';
+require 'config.php';
 
 if (!isset($_SESSION['user_id'])) {
   echo json_encode(null);

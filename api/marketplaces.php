@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/config.php';
+require 'config.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
